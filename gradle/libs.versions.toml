@@ -6,6 +6,7 @@ ksp = "2.3.12"
 secretsPlugin = "2.0.1"
 
 # Core Android
+desugar_jdk_libs = "2.1.5"
 coreKtx = "1.19.1"
 activityCompose = "1.13.0"
 
@@ -42,6 +43,7 @@ espressoCore = "3.7.0"
 
 [libraries]
 # Core Android
+desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 

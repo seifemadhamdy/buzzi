@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import seifemadhamdy.buzzi.domain.usecase.GetTopHeadlinesUseCase
 import seifemadhamdy.buzzi.domain.usecase.SearchArticlesUseCase
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
@@ -90,6 +91,8 @@ class ArticlesViewModel @Inject constructor(
                     errorMessage = null
                 )
             }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (exception: Exception) {
             _uiState.update {
                 it.copy(
