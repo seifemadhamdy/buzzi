@@ -3,9 +3,6 @@ package seifemadhamdy.buzzi.presentation.articles
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -16,6 +13,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import seifemadhamdy.buzzi.domain.usecase.GetTopHeadlinesUseCase
 import seifemadhamdy.buzzi.domain.usecase.SearchArticlesUseCase
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class ArticlesViewModel

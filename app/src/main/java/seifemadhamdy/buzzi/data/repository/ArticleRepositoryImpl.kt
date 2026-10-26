@@ -1,6 +1,5 @@
 package seifemadhamdy.buzzi.data.repository
 
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -10,6 +9,7 @@ import seifemadhamdy.buzzi.data.mapper.toEntityOrNull
 import seifemadhamdy.buzzi.data.remote.NewsApiService
 import seifemadhamdy.buzzi.domain.model.Article
 import seifemadhamdy.buzzi.domain.repository.ArticleRepository
+import javax.inject.Inject
 
 class ArticleRepositoryImpl
 @Inject

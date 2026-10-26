@@ -95,7 +95,7 @@ fun ArticleDetailsScreen(
     rememberSaveable(article.imageUrl) {
       mutableStateOf<Int?>(null)
     }
-    
+
   val gradientColor = gradientColorArgb?.let { Color(it) } ?: Color.Transparent
 
   val tint by
