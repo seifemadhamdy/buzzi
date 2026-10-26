@@ -1,23 +1,26 @@
 package seifemadhamdy.buzzi.presentation.articles
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
@@ -27,7 +30,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -35,10 +37,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -53,6 +61,8 @@ private val ScreenPadding = 16.dp
 
 private val TextInset = 8.dp
 
+private val ListTopPadding = 24.dp
+
 @Composable
 fun ArticlesContent(
     uiState: ArticlesUiState,
@@ -62,28 +72,27 @@ fun ArticlesContent(
     modifier: Modifier = Modifier,
 ) {
     val errorMessage = uiState.errorMessage
+    val hasArticles = uiState.articles.isNotEmpty()
+
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val headerHeight = with(LocalDensity.current) { headerHeightPx.toDp() }
 
     Scaffold(modifier = modifier) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = innerPadding.calculateTopPadding()),
-        ) {
-            Header(
-                query = uiState.query,
-                onQueryChange = onSearchQueryChanged,
-            )
-
+        Box(modifier = Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (hasArticles) Modifier else Modifier.padding(top = headerHeight),
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 when {
-                    uiState.isLoading && uiState.articles.isEmpty() -> {
+                    uiState.isLoading && !hasArticles -> {
                         CircularProgressIndicator()
                     }
 
-                    errorMessage != null && uiState.articles.isEmpty() -> {
+                    errorMessage != null && !hasArticles -> {
                         StatusMessage(
                             icon = Icons.Rounded.CloudOff,
                             title = "Couldn't load headlines",
@@ -95,7 +104,7 @@ fun ArticlesContent(
                         )
                     }
 
-                    uiState.articles.isEmpty() && uiState.query.isNotBlank() -> {
+                    !hasArticles && uiState.query.isNotBlank() -> {
                         StatusMessage(
                             icon = Icons.Rounded.SearchOff,
                             title = "No results",
@@ -107,7 +116,7 @@ fun ArticlesContent(
                         )
                     }
 
-                    uiState.articles.isEmpty() -> {
+                    !hasArticles -> {
                         StatusMessage(
                             icon = Icons.Rounded.Newspaper,
                             title = "No headlines yet",
@@ -119,52 +128,53 @@ fun ArticlesContent(
                     }
 
                     else -> {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            if (uiState.isLoading) {
-                                LinearProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = ScreenPadding),
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = ScreenPadding,
+                                end = ScreenPadding,
+                                top = headerHeight + ListTopPadding,
+                                bottom = innerPadding.calculateBottomPadding() +
+                                        ScreenPadding,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(ScreenPadding),
+                        ) {
+                            item(key = "section_title") {
+                                Text(
+                                    text = "Top Headlines",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = TextInset),
                                 )
                             }
 
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(
-                                    start = ScreenPadding,
-                                    end = ScreenPadding,
-                                    top = 24.dp,
-                                    bottom = innerPadding.calculateBottomPadding() +
-                                            ScreenPadding,
-                                ),
-                                verticalArrangement = Arrangement.spacedBy(ScreenPadding),
-                            ) {
-                                item(key = "section_title") {
-                                    Text(
-                                        text = "Top Headlines",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = TextInset),
-                                    )
-                                }
-
-                                items(
-                                    items = uiState.articles,
-                                    key = { article -> article.url },
-                                ) { article ->
-                                    ArticleCard(
-                                        article = article,
-                                        onClick = {
-                                            onArticleSelected(article)
-                                        },
-                                    )
-                                }
+                            items(
+                                items = uiState.articles,
+                                key = { article -> article.url },
+                            ) { article ->
+                                ArticleCard(
+                                    article = article,
+                                    onClick = {
+                                        onArticleSelected(article)
+                                    },
+                                )
                             }
                         }
                     }
                 }
             }
+
+            Header(
+                query = uiState.query,
+                isSearching = uiState.isLoading && hasArticles,
+                onQueryChange = onSearchQueryChanged,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .onSizeChanged { headerHeightPx = it.height }
+                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.88f))
+                    .padding(top = innerPadding.calculateTopPadding()),
+            )
         }
     }
 }
@@ -172,6 +182,7 @@ fun ArticlesContent(
 @Composable
 private fun Header(
     query: String,
+    isSearching: Boolean,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -182,6 +193,7 @@ private fun Header(
                 start = ScreenPadding,
                 end = ScreenPadding,
                 top = 12.dp,
+                bottom = 12.dp,
             ),
     ) {
         Text(
@@ -196,6 +208,7 @@ private fun Header(
 
         SearchField(
             query = query,
+            isSearching = isSearching,
             onQueryChange = onQueryChange,
         )
     }
@@ -204,6 +217,7 @@ private fun Header(
 @Composable
 private fun SearchField(
     query: String,
+    isSearching: Boolean,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -221,12 +235,23 @@ private fun SearchField(
             )
         },
         trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Close,
-                        contentDescription = "Clear search",
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isSearching) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
                     )
+                }
+
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "Clear search",
+                        )
+                    }
+                } else if (isSearching) {
+                    Spacer(Modifier.width(16.dp))
                 }
             }
         },
@@ -347,6 +372,23 @@ private fun ArticlesContentPreview() {
     BuzziTheme {
         ArticlesContent(
             uiState = ArticlesUiState(
+                articles = previewArticles,
+            ),
+            onSearchQueryChanged = {},
+            onRetry = {},
+            onArticleSelected = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ArticlesContentSearchingPreview() {
+    BuzziTheme {
+        ArticlesContent(
+            uiState = ArticlesUiState(
+                query = "markets",
+                isLoading = true,
                 articles = previewArticles,
             ),
             onSearchQueryChanged = {},
