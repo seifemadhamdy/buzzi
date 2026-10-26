@@ -48,11 +48,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import seifemadhamdy.buzzi.R
 import seifemadhamdy.buzzi.domain.model.Article
 import seifemadhamdy.buzzi.presentation.articles.components.ArticleCard
 import seifemadhamdy.buzzi.ui.theme.BuzziTheme
@@ -197,11 +199,11 @@ private fun Header(
             ),
     ) {
         Text(
-            text = "Buzzi",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = TextInset),
+            modifier = Modifier.padding(horizontal = TextInset)
         )
 
         Spacer(Modifier.height(20.dp))
