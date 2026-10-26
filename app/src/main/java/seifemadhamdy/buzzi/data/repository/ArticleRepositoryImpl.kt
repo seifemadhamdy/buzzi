@@ -1,39 +1,48 @@
 package seifemadhamdy.buzzi.data.repository
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import seifemadhamdy.buzzi.data.mapper.toDomainOrNull
+import seifemadhamdy.buzzi.data.local.dao.ArticleDao
+import seifemadhamdy.buzzi.data.mapper.toDomain
+import seifemadhamdy.buzzi.data.mapper.toEntityOrNull
 import seifemadhamdy.buzzi.data.remote.NewsApiService
 import seifemadhamdy.buzzi.domain.model.Article
 import seifemadhamdy.buzzi.domain.repository.ArticleRepository
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 class ArticleRepositoryImpl @Inject constructor(
     private val newsApiService: NewsApiService,
+    private val articleDao: ArticleDao
 ) : ArticleRepository {
 
-    private val articlesByUrl = ConcurrentHashMap<String, Article>()
-
     override suspend fun getTopHeadlines(): List<Article> =
-        coroutineScope {
-            val page1 = async {
-                newsApiService.getTopHeadlines(page = 1)
-            }
-            val page2 = async {
-                newsApiService.getTopHeadlines(page = 2)
-            }
+        try {
+            coroutineScope {
+                val page1 = async {
+                    newsApiService.getTopHeadlines(page = 1)
+                }
+                val page2 = async {
+                    newsApiService.getTopHeadlines(page = 2)
+                }
 
-            val articles = (page1.await().articles.orEmpty() +
-                    page2.await().articles.orEmpty())
-                .mapNotNull { it.toDomainOrNull() }
-                .distinctBy { it.url }
+                val entities = (page1.await().articles.orEmpty() +
+                        page2.await().articles.orEmpty())
+                    .mapNotNull { it.toEntityOrNull() }
+                    .distinctBy { it.url }
 
-            articles.forEach { article ->
-                articlesByUrl[article.url] = article
+                if (entities.isNotEmpty()) {
+                    articleDao.insertArticles(entities)
+                }
+
+                entities.map { it.toDomain() }
             }
-
-            articles
+        } catch (exception: Exception) {
+            if (exception is CancellationException) throw exception
+            val cachedArticles = articleDao.getArticles().map { it.toDomain() }
+            cachedArticles.ifEmpty {
+                throw exception
+            }
         }
 
     override suspend fun searchArticles(query: String): List<Article> {
@@ -43,20 +52,29 @@ class ArticleRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        val articles = newsApiService
-            .searchTopHeadlines(query = normalizedQuery)
-            .articles
-            .orEmpty()
-            .mapNotNull { it.toDomainOrNull() }
-            .distinctBy { it.url }
+        return try {
+            val entities = newsApiService
+                .searchTopHeadlines(query = normalizedQuery)
+                .articles
+                .orEmpty()
+                .mapNotNull { it.toEntityOrNull() }
+                .distinctBy { it.url }
 
-        articles.forEach { article ->
-            articlesByUrl[article.url] = article
+            if (entities.isNotEmpty()) {
+                articleDao.insertArticles(entities)
+            }
+
+            entities.map { it.toDomain() }
+        } catch (exception: Exception) {
+            if (exception is CancellationException) throw exception
+            val cachedSearchResults =
+                articleDao.searchArticles(normalizedQuery).map { it.toDomain() }
+            cachedSearchResults.ifEmpty {
+                throw exception
+            }
         }
-
-        return articles
     }
 
     override suspend fun getArticleByUrl(url: String): Article? =
-        articlesByUrl[url]
+        articleDao.getArticleByUrl(url)?.toDomain()
 }
