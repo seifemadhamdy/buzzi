@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -57,19 +59,21 @@ fun ArticleCard(
   val scope = rememberCoroutineScope()
   val animationSpec = tween<Color>(durationMillis = 800)
 
-  var bottomContentHeight by remember {
+  var bottomContentHeight by rememberSaveable {
     mutableIntStateOf(0)
   }
 
   var isImageLight by
-    remember(article.imageUrl) {
+    rememberSaveable(article.imageUrl) {
       mutableStateOf(false)
     }
 
-  var gradientColor by
-    remember(article.imageUrl) {
-      mutableStateOf<Color?>(null)
+  var gradientColorArgb by
+    rememberSaveable(article.imageUrl) {
+      mutableStateOf<Int?>(null)
     }
+
+  val gradientColor = gradientColorArgb?.let { Color(it) }
 
   val contentColor by
     animateColorAsState(
@@ -112,7 +116,7 @@ fun ArticleCard(
           scope.launch {
             paletteFrom(bitmap)?.let {
               isImageLight = it.isLight
-              gradientColor = it.gradientColor
+              gradientColorArgb = it.gradientColor?.toArgb()
             }
           }
         },

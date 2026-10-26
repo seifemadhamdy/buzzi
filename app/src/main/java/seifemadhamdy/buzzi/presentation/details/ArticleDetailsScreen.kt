@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -89,10 +91,12 @@ fun ArticleDetailsScreen(
   val colorSpec = tween<Color>(durationMillis = 800)
   val colors = MaterialTheme.colorScheme
 
-  var gradientColor by
-    remember(article.imageUrl) {
-      mutableStateOf(Color.Transparent)
+  var gradientColorArgb by
+    rememberSaveable(article.imageUrl) {
+      mutableStateOf<Int?>(null)
     }
+    
+  val gradientColor = gradientColorArgb?.let { Color(it) } ?: Color.Transparent
 
   val tint by
     animateColorAsState(
@@ -197,7 +201,7 @@ fun ArticleDetailsScreen(
             val bitmap = state.result.image.toBitmap()
             scope.launch {
               paletteFrom(bitmap)?.let {
-                gradientColor = it.gradientColor ?: Color.Transparent
+                gradientColorArgb = it.gradientColor?.toArgb()
               }
             }
           },
