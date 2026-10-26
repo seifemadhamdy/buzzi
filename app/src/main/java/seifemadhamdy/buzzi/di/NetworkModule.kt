@@ -20,7 +20,7 @@ object NetworkModule {
         val authenticatedRequest =
             chain.request()
                 .newBuilder()
-                .header("", BuildConfig.NEWS_API_KEY)
+                .header("x-api-key", BuildConfig.NEWS_API_KEY)
                 .build()
         chain.proceed(authenticatedRequest)
     }.build()
