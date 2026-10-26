@@ -72,6 +72,7 @@ dependencies {
     // Image loading
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.palette.ktx)
 
     // Dependency injection
     implementation(libs.hilt.android)

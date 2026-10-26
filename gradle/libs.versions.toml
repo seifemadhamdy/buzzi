@@ -25,6 +25,7 @@ okhttp = "5.5.1"
 
 # Images
 coil = "3.6.3"
+paletteKtx = "1.1.0"
 
 # Dependency injection
 hilt = "2.60.1"
@@ -73,6 +74,7 @@ retrofit-converter-gson = { module = "com.squareup.retrofit2:converter-gson", ve
 # Image loading
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+androidx-palette-ktx = { module = "androidx.palette:palette-ktx", version.ref = "paletteKtx" }
 
 # Dependency injection
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
