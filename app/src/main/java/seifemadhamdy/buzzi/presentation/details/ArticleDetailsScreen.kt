@@ -81,307 +81,291 @@ private val TruncatedSuffix = Regex("""\s*\[\+\d+ chars]\s*$""")
 
 @Composable
 fun ArticleDetailsScreen(
-    article: Article,
-    onBack: () -> Unit,
+  article: Article,
+  onBack: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val colorSpec = tween<Color>(durationMillis = 800)
-    val colors = MaterialTheme.colorScheme
+  val context = LocalContext.current
+  val scope = rememberCoroutineScope()
+  val colorSpec = tween<Color>(durationMillis = 800)
+  val colors = MaterialTheme.colorScheme
 
-    var gradientColor by remember(article.imageUrl) {
-        mutableStateOf(Color.Transparent)
+  var gradientColor by
+    remember(article.imageUrl) {
+      mutableStateOf(Color.Transparent)
     }
 
-    val tint by animateColorAsState(
-        targetValue = gradientColor,
-        animationSpec = colorSpec,
-        label = "tint",
+  val tint by
+    animateColorAsState(
+      targetValue = gradientColor,
+      animationSpec = colorSpec,
+      label = "tint",
     )
 
-    val accent by animateColorAsState(
-        targetValue = gradientColor
-            .takeIf { it != Color.Transparent }
-            ?.let { lerp(it, colors.onSurface, 0.35f) }
-            ?: colors.primary,
-        animationSpec = colorSpec,
-        label = "accent",
+  val accent by
+    animateColorAsState(
+      targetValue =
+        gradientColor.takeIf { it != Color.Transparent }?.let { lerp(it, colors.onSurface, 0.35f) }
+          ?: colors.primary,
+      animationSpec = colorSpec,
+      label = "accent",
     )
 
-    val imageRequest = remember(article.imageUrl) {
-        ImageRequest.Builder(context)
-            .data(article.imageUrl)
-            .crossfade(true)
-            .build()
+  val imageRequest =
+    remember(article.imageUrl) {
+      ImageRequest.Builder(context).data(article.imageUrl).crossfade(true).build()
     }
 
-    val body = remember(article.content) {
-        article.content
-            ?.replace(TruncatedSuffix, "")
-            ?.trim()
-            ?.takeIf(String::isNotBlank)
+  val body =
+    remember(article.content) {
+      article.content?.replace(TruncatedSuffix, "")?.trim()?.takeIf(String::isNotBlank)
     }
 
-    val openArticle = {
-        try {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, article.url.toUri()),
-            )
-        } catch (_: ActivityNotFoundException) {
-            Toast.makeText(
-                context,
-                "No app can open this link.",
-                Toast.LENGTH_SHORT,
-            ).show()
-        }
+  val openArticle = {
+    try {
+      context.startActivity(Intent(Intent.ACTION_VIEW, article.url.toUri()))
+    } catch (_: ActivityNotFoundException) {
+      Toast.makeText(
+          context,
+          "No app can open this link.",
+          Toast.LENGTH_SHORT,
+        )
+        .show()
+    }
+  }
+
+  Box(modifier = Modifier.fillMaxSize().background(colors.surface)) {
+    if (article.imageUrl != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      AsyncImage(
+        model = imageRequest,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier =
+          Modifier.fillMaxWidth()
+            .height(BackdropHeight)
+            .blur(64.dp)
+            .graphicsLayer {
+              compositingStrategy = CompositingStrategy.Offscreen
+            }
+            .drawWithContent {
+              drawContent()
+              drawRect(
+                brush =
+                  Brush.verticalGradient(
+                    colors =
+                      listOf(
+                        Color.Black.copy(alpha = 0.55f),
+                        Color.Black.copy(alpha = 0.25f),
+                        Color.Transparent,
+                      )
+                  ),
+                blendMode = BlendMode.DstIn,
+              )
+            },
+      )
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.surface),
-    ) {
-        if (article.imageUrl != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(BackdropHeight)
-                    .blur(64.dp)
-                    .graphicsLayer {
-                        compositingStrategy = CompositingStrategy.Offscreen
-                    }
-                    .drawWithContent {
-                        drawContent()
-                        drawRect(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.55f),
-                                    Color.Black.copy(alpha = 0.25f),
-                                    Color.Transparent,
-                                ),
-                            ),
-                            blendMode = BlendMode.DstIn,
-                        )
-                    },
+      modifier =
+        Modifier.fillMaxWidth().height(BackdropHeight).drawBehind {
+          drawRect(
+            Brush.verticalGradient(
+              colors =
+                listOf(
+                  tint.copy(alpha = 0.35f),
+                  tint.copy(alpha = 0.12f),
+                  Color.Transparent,
+                )
             )
+          )
         }
+    )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(BackdropHeight)
-                .drawBehind {
-                    drawRect(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                tint.copy(alpha = 0.35f),
-                                tint.copy(alpha = 0.12f),
-                                Color.Transparent,
-                            ),
-                        ),
-                    )
-                },
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(top = 64.dp, bottom = 40.dp),
-        ) {
-            if (article.imageUrl != null) {
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = article.title,
-                    contentScale = ContentScale.Crop,
-                    onSuccess = { state ->
-                        val bitmap = state.result.image.toBitmap()
-                        scope.launch {
-                            paletteFrom(bitmap)?.let {
-                                gradientColor = it.gradientColor ?: Color.Transparent
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .padding(horizontal = ScreenPadding)
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(MaterialTheme.shapes.extraLarge),
-                )
+    Column(
+      modifier =
+        Modifier.fillMaxSize()
+          .verticalScroll(rememberScrollState())
+          .statusBarsPadding()
+          .navigationBarsPadding()
+          .padding(top = 64.dp, bottom = 40.dp)
+    ) {
+      if (article.imageUrl != null) {
+        AsyncImage(
+          model = imageRequest,
+          contentDescription = article.title,
+          contentScale = ContentScale.Crop,
+          onSuccess = { state ->
+            val bitmap = state.result.image.toBitmap()
+            scope.launch {
+              paletteFrom(bitmap)?.let {
+                gradientColor = it.gradientColor ?: Color.Transparent
+              }
             }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = ScreenPadding)
-                    .padding(top = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = colors.onSurface.copy(alpha = 0.1f),
-                        contentColor = colors.onSurface.copy(alpha = 0.8f),
-                    ) {
-                        Text(
-                            text = article.sourceName?.uppercase() ?: "LATEST",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(
-                                horizontal = 12.dp,
-                                vertical = 6.dp,
-                            ),
-                        )
-                    }
-
-                    article.publishedAt?.let { date ->
-                        Text(
-                            text = date.toFriendlyDate(),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colors.onSurface.copy(alpha = 0.6f),
-                        )
-                    }
-                }
-
-                Text(
-                    text = article.title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                )
-
-                article.author?.takeIf(String::isNotBlank)?.let { author ->
-                    Text(
-                        text = "By $author",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurface.copy(alpha = 0.7f),
-                    )
-                }
-
-                article.description?.takeIf(String::isNotBlank)?.let { description ->
-                    Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .fillMaxHeight()
-                                .clip(CircleShape)
-                                .background(accent),
-                        )
-
-                        Spacer(Modifier.width(16.dp))
-
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 26.sp,
-                            color = colors.onSurface.copy(alpha = 0.85f),
-                        )
-                    }
-                }
-
-                body?.let { content ->
-                    SelectionContainer {
-                        Text(
-                            text = content,
-                            style = MaterialTheme.typography.bodyLarge,
-                            lineHeight = 28.sp,
-                            color = colors.onSurface.copy(alpha = 0.9f),
-                        )
-                    }
-                }
-            }
-        }
-
-        val buttonColors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = colors.surface.copy(alpha = 0.8f),
-            contentColor = colors.onSurface,
+          },
+          modifier =
+            Modifier.padding(horizontal = ScreenPadding)
+              .fillMaxWidth()
+              .aspectRatio(16f / 9f)
+              .clip(MaterialTheme.shapes.extraLarge),
         )
+      }
 
+      Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenPadding).padding(top = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+      ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
         ) {
-            FilledTonalIconButton(onClick = onBack, colors = buttonColors) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Navigate back",
-                )
-            }
+          Surface(
+            shape = CircleShape,
+            color = colors.onSurface.copy(alpha = 0.1f),
+            contentColor = colors.onSurface.copy(alpha = 0.8f),
+          ) {
+            Text(
+              text = article.sourceName?.uppercase() ?: "LATEST",
+              style = MaterialTheme.typography.labelMedium,
+              fontWeight = FontWeight.Bold,
+              modifier =
+                Modifier.padding(
+                  horizontal = 12.dp,
+                  vertical = 6.dp,
+                ),
+            )
+          }
 
-            FilledTonalIconButton(onClick = openArticle, colors = buttonColors) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                    contentDescription = "Read original article",
-                )
-            }
+          article.publishedAt?.let { date ->
+            Text(
+              text = date.toFriendlyDate(),
+              style = MaterialTheme.typography.labelLarge,
+              color = colors.onSurface.copy(alpha = 0.6f),
+            )
+          }
         }
+
+        Text(
+          text = article.title,
+          style = MaterialTheme.typography.headlineMedium,
+          fontWeight = FontWeight.Bold,
+          color = colors.onSurface,
+        )
+
+        article.author?.takeIf(String::isNotBlank)?.let { author ->
+          Text(
+            text = "By $author",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurface.copy(alpha = 0.7f),
+          )
+        }
+
+        article.description?.takeIf(String::isNotBlank)?.let { description ->
+          Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            Box(
+              modifier = Modifier.width(4.dp).fillMaxHeight().clip(CircleShape).background(accent)
+            )
+
+            Spacer(Modifier.width(16.dp))
+
+            Text(
+              text = description,
+              style = MaterialTheme.typography.titleMedium,
+              fontWeight = FontWeight.Medium,
+              lineHeight = 26.sp,
+              color = colors.onSurface.copy(alpha = 0.85f),
+            )
+          }
+        }
+
+        body?.let { content ->
+          SelectionContainer {
+            Text(
+              text = content,
+              style = MaterialTheme.typography.bodyLarge,
+              lineHeight = 28.sp,
+              color = colors.onSurface.copy(alpha = 0.9f),
+            )
+          }
+        }
+      }
     }
+
+    val buttonColors =
+      IconButtonDefaults.filledTonalIconButtonColors(
+        containerColor = colors.surface.copy(alpha = 0.8f),
+        contentColor = colors.onSurface,
+      )
+
+    Row(
+      modifier =
+        Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
+      horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+      FilledTonalIconButton(onClick = onBack, colors = buttonColors) {
+        Icon(
+          imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+          contentDescription = "Navigate back",
+        )
+      }
+
+      FilledTonalIconButton(onClick = openArticle, colors = buttonColors) {
+        Icon(
+          imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+          contentDescription = "Read original article",
+        )
+      }
+    }
+  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleDetailsRoute(
-    onBack: () -> Unit,
-    viewModel: ArticleDetailsViewModel = hiltViewModel(),
+  onBack: () -> Unit,
+  viewModel: ArticleDetailsViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+  val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when {
-        uiState.isLoading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        }
-
-        uiState.article != null -> {
-            ArticleDetailsScreen(
-                article = uiState.article!!,
-                onBack = onBack,
-            )
-        }
-
-        else -> {
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("Article") },
-                        navigationIcon = {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                )
-                            }
-                        },
-                    )
-                },
-            ) { innerPadding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = uiState.errorMessage ?: "Article unavailable.",
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-            }
-        }
+  when {
+    uiState.isLoading -> {
+      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+      }
     }
+
+    uiState.article != null -> {
+      ArticleDetailsScreen(
+        article = uiState.article!!,
+        onBack = onBack,
+      )
+    }
+
+    else -> {
+      Scaffold(
+        topBar = {
+          TopAppBar(
+            title = { Text("Article") },
+            navigationIcon = {
+              IconButton(onClick = onBack) {
+                Icon(
+                  imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                  contentDescription = "Back",
+                )
+              }
+            },
+          )
+        }
+      ) { innerPadding ->
+        Box(
+          modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
+          contentAlignment = Alignment.Center,
+        ) {
+          Text(
+            text = uiState.errorMessage ?: "Article unavailable.",
+            style = MaterialTheme.typography.bodyLarge,
+          )
+        }
+      }
+    }
+  }
 }

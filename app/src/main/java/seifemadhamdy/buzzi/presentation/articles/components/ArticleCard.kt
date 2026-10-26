@@ -49,188 +49,179 @@ import seifemadhamdy.buzzi.presentation.common.paletteFrom
 
 @Composable
 fun ArticleCard(
-    article: Article,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+  article: Article,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val animationSpec = tween<Color>(durationMillis = 800)
+  val context = LocalContext.current
+  val scope = rememberCoroutineScope()
+  val animationSpec = tween<Color>(durationMillis = 800)
 
-    var bottomContentHeight by remember {
-        mutableIntStateOf(0)
+  var bottomContentHeight by remember {
+    mutableIntStateOf(0)
+  }
+
+  var isImageLight by
+    remember(article.imageUrl) {
+      mutableStateOf(false)
     }
 
-    var isImageLight by remember(article.imageUrl) {
-        mutableStateOf(false)
+  var gradientColor by
+    remember(article.imageUrl) {
+      mutableStateOf<Color?>(null)
     }
 
-    var gradientColor by remember(article.imageUrl) {
-        mutableStateOf<Color?>(null)
-    }
-
-    val contentColor by animateColorAsState(
-        targetValue = if (isImageLight) Color.Black else Color.White,
-        animationSpec = animationSpec,
-        label = "contentColor",
+  val contentColor by
+    animateColorAsState(
+      targetValue = if (isImageLight) Color.Black else Color.White,
+      animationSpec = animationSpec,
+      label = "contentColor",
     )
 
-    val pillColor = contentColor.copy(alpha = 0.2f)
+  val pillColor = contentColor.copy(alpha = 0.2f)
 
-    val animatedGradient by animateColorAsState(
-        targetValue = gradientColor ?: Color.Black,
-        animationSpec = animationSpec,
-        label = "gradientColor",
+  val animatedGradient by
+    animateColorAsState(
+      targetValue = gradientColor ?: Color.Black,
+      animationSpec = animationSpec,
+      label = "gradientColor",
     )
 
-    val imageRequest = remember(article.imageUrl) {
-        ImageRequest.Builder(context)
-            .data(article.imageUrl)
-            .crossfade(true)
-            .build()
+  val imageRequest =
+    remember(article.imageUrl) {
+      ImageRequest.Builder(context).data(article.imageUrl).crossfade(true).build()
     }
 
-    val maskColors = remember {
-        listOf(Color.Transparent, Color.Black)
-    }
+  val maskColors = remember {
+    listOf(Color.Transparent, Color.Black)
+  }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(4f / 5f)
-            .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp,
-        ),
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = article.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                onSuccess = { state ->
-                    val bitmap = state.result.image.toBitmap()
-                    scope.launch {
-                        paletteFrom(bitmap)?.let {
-                            isImageLight = it.isLight
-                            gradientColor = it.gradientColor
-                        }
-                    }
+  Card(
+    modifier = modifier.fillMaxWidth().aspectRatio(4f / 5f).clickable(onClick = onClick),
+    shape = MaterialTheme.shapes.extraLarge,
+    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+  ) {
+    Box(Modifier.fillMaxSize()) {
+      AsyncImage(
+        model = imageRequest,
+        contentDescription = article.title,
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop,
+        onSuccess = { state ->
+          val bitmap = state.result.image.toBitmap()
+          scope.launch {
+            paletteFrom(bitmap)?.let {
+              isImageLight = it.isLight
+              gradientColor = it.gradientColor
+            }
+          }
+        },
+      )
+
+      if (article.imageUrl != null) {
+        AsyncImage(
+          model = imageRequest,
+          contentDescription = null,
+          modifier =
+            Modifier.fillMaxSize()
+              .blur(40.dp)
+              .graphicsLayer {
+                compositingStrategy = CompositingStrategy.Offscreen
+              }
+              .drawWithCache {
+                val paddingPx = 20.dp.toPx()
+                val fadeHeightPx = 60.dp.toPx()
+                val contentTop = size.height - bottomContentHeight - paddingPx
+
+                val mask =
+                  Brush.verticalGradient(
+                    colors = maskColors,
+                    startY = (contentTop - fadeHeightPx).coerceAtLeast(0f),
+                    endY = contentTop,
+                  )
+
+                onDrawWithContent {
+                  drawContent()
+                  drawRect(
+                    brush = mask,
+                    blendMode = BlendMode.DstIn,
+                  )
                 }
+              },
+          contentScale = ContentScale.Crop,
+        )
+      }
+
+      CompositionLocalProvider(LocalContentColor provides contentColor) {
+        Column(
+          modifier =
+            Modifier.fillMaxSize()
+              .drawWithCache {
+                val overlay =
+                  Brush.verticalGradient(
+                    colors =
+                      listOf(
+                        Color.Transparent,
+                        animatedGradient.copy(alpha = 0.1f),
+                        animatedGradient.copy(alpha = 0.3f),
+                        animatedGradient.copy(alpha = 0.6f),
+                      )
+                  )
+
+                onDrawBehind {
+                  drawRect(overlay)
+                }
+              }
+              .padding(24.dp)
+        ) {
+          Spacer(Modifier.weight(1f))
+
+          Column(
+            modifier =
+              Modifier.onSizeChanged {
+                bottomContentHeight = it.height
+              }
+          ) {
+            Surface(
+              shape = CircleShape,
+              color = pillColor,
+              contentColor = contentColor,
+              modifier = Modifier.padding(bottom = 12.dp),
+            ) {
+              Text(
+                text = article.sourceName?.uppercase() ?: "LATEST",
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Bold,
+                modifier =
+                  Modifier.padding(
+                    horizontal = 12.dp,
+                    vertical = 6.dp,
+                  ),
+              )
+            }
+
+            Text(
+              text = article.title,
+              style = MaterialTheme.typography.titleLarge,
+              fontWeight = FontWeight.SemiBold,
+              maxLines = 3,
+              overflow = TextOverflow.Ellipsis,
+              modifier = Modifier.padding(bottom = 8.dp),
             )
 
-            if (article.imageUrl != null) {
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(40.dp)
-                        .graphicsLayer {
-                            compositingStrategy =
-                                CompositingStrategy.Offscreen
-                        }
-                        .drawWithCache {
-                            val paddingPx = 20.dp.toPx()
-                            val fadeHeightPx = 60.dp.toPx()
-                            val contentTop =
-                                size.height -
-                                        bottomContentHeight -
-                                        paddingPx
-
-                            val mask = Brush.verticalGradient(
-                                colors = maskColors,
-                                startY = (contentTop - fadeHeightPx)
-                                    .coerceAtLeast(0f),
-                                endY = contentTop,
-                            )
-
-                            onDrawWithContent {
-                                drawContent()
-                                drawRect(
-                                    brush = mask,
-                                    blendMode = BlendMode.DstIn,
-                                )
-                            }
-                        },
-                    contentScale = ContentScale.Crop,
-                )
+            article.author?.takeIf(String::isNotBlank)?.let { author ->
+              Text(
+                text = "By $author",
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor.copy(alpha = 0.6f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+              )
             }
-
-            CompositionLocalProvider(
-                LocalContentColor provides contentColor,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .drawWithCache {
-                            val overlay = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    animatedGradient.copy(alpha = 0.1f),
-                                    animatedGradient.copy(alpha = 0.3f),
-                                    animatedGradient.copy(alpha = 0.6f),
-                                ),
-                            )
-
-                            onDrawBehind {
-                                drawRect(overlay)
-                            }
-                        }
-                        .padding(24.dp),
-                ) {
-                    Spacer(Modifier.weight(1f))
-
-                    Column(
-                        modifier = Modifier.onSizeChanged {
-                            bottomContentHeight = it.height
-                        },
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = pillColor,
-                            contentColor = contentColor,
-                            modifier = Modifier.padding(bottom = 12.dp),
-                        ) {
-                            Text(
-                                text = article.sourceName
-                                    ?.uppercase()
-                                    ?: "LATEST",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = contentColor.copy(alpha = 0.8f),
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(
-                                    horizontal = 12.dp,
-                                    vertical = 6.dp,
-                                ),
-                            )
-                        }
-
-                        Text(
-                            text = article.title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-
-                        article.author
-                            ?.takeIf(String::isNotBlank)
-                            ?.let { author ->
-                                Text(
-                                    text = "By $author",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = contentColor.copy(alpha = 0.6f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                    }
-                }
-            }
+          }
         }
+      }
     }
+  }
 }
