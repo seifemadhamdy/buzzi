@@ -1,5 +1,6 @@
 package seifemadhamdy.buzzi.data.repository
 
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -9,7 +10,6 @@ import seifemadhamdy.buzzi.data.mapper.toEntityOrNull
 import seifemadhamdy.buzzi.data.remote.NewsApiService
 import seifemadhamdy.buzzi.domain.model.Article
 import seifemadhamdy.buzzi.domain.repository.ArticleRepository
-import javax.inject.Inject
 
 class ArticleRepositoryImpl
 @Inject
@@ -54,7 +54,7 @@ constructor(
       return emptyList()
     }
 
-    return try {
+    try {
       val entities =
         newsApiService
           .searchTopHeadlines(query = normalizedQuery)
@@ -66,15 +66,11 @@ constructor(
       if (entities.isNotEmpty()) {
         articleDao.insertArticles(entities)
       }
-
-      entities.map { it.toDomain() }
     } catch (exception: Exception) {
       if (exception is CancellationException) throw exception
-      val cachedSearchResults = articleDao.searchArticles(normalizedQuery).map { it.toDomain() }
-      cachedSearchResults.ifEmpty {
-        throw exception
-      }
     }
+
+    return articleDao.searchArticles(normalizedQuery).map { it.toDomain() }
   }
 
   override suspend fun getArticleByUrl(url: String): Article? =
