@@ -1,5 +1,8 @@
 package seifemadhamdy.buzzi.data.remote.dto
 
+import androidx.annotation.Keep
+
+@Keep
 data class ArticleDto(
   val source: SourceDto? = null,
   val author: String? = null,
