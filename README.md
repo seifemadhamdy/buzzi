@@ -11,7 +11,7 @@ Buzzi is a modern, offline-first Android news application designed to provide us
   </tr>
   <tr>
     <td width="25%">
-      <img src="https://github.com/user-attachments/assets/62422c59-56e9-406a-ad49-2700c2eae908" alt="Top Headlines Screen (Light)" width="100%"><br>
+      <img src="https://github.com/user-attachments/assets/15e310c6-f583-42f3-8b1a-d668d6dc8ddb" alt="Top Headlines Screen (Light)" width="100%"><br>
       <strong>Top Headlines</strong>
     </td>
     <td width="25%">
@@ -19,7 +19,7 @@ Buzzi is a modern, offline-first Android news application designed to provide us
       <strong>Article Details</strong>
     </td>
     <td width="25%">
-      <img src="https://github.com/user-attachments/assets/23cca009-8307-419a-8f03-1df5b0dd28cf" alt="Top Headlines Screen (Dark)" width="100%"><br>
+      <img src="https://github.com/user-attachments/assets/fff66d15-9f5e-4952-8c63-38d8f1f9378b" alt="Top Headlines Screen (Dark)" width="100%"><br>
       <strong>Top Headlines</strong>
     </td>
     <td width="25%">
